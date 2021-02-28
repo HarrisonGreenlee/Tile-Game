@@ -32,7 +32,7 @@ namespace TileGame
             {
                 for (int i = 0; i < xLength; i++)
                 {
-                    board[i, j] = new Tile(TileID.EmptyTile, SimpleVector.Zero(), false);
+                    board[i, j] = new Tile(TileID.EmptyTile, SimpleVector.Zero());
                 }
             }
         }
@@ -192,48 +192,29 @@ namespace TileGame
 
     public class Tile
     {
-        public TileID ID;
+        public const TileID ID = TileID.InvalidTile;
         public SimpleVector direction;
-        private bool state;
-        public bool stateHasBeenTrueThisUpdate;
+        protected bool state;
 
-        public Tile(TileID ID, SimpleVector direction, bool state)
+        public Tile(SimpleVector direction, bool state)
         {
-            this.ID = ID;
             this.direction = direction;
             this.state = state;
-            this.stateHasBeenTrueThisUpdate = false;
         }
 
-        public void ResetState()
+        public virtual void ResetState()
         {
             this.state = false;
-            this.stateHasBeenTrueThisUpdate = false;
         }
 
-        public void TrySetHighState()
+        public virtual void TrySetHighState()
         {
-            // Handle signal collisions on empty tiles.
-            if (ID == TileID.EmptyTile)
-            {
-                this.state = true && !stateHasBeenTrueThisUpdate;
-            }
-            else
-            {
-                this.state = true;
-            }
-            this.stateHasBeenTrueThisUpdate = true;
+            this.state = true;
         }
 
-        public void TrySetHighStateAndDirection(SimpleVector direction)
+        public virtual void TrySetHighStateAndDirection(SimpleVector direction)
         {
             TrySetHighState();
-
-            // The direction is only changed for empty tiles.
-            if (ID == TileID.EmptyTile)
-            {
-                this.direction = direction;
-            }
         }
 
         public bool HasSignal()
@@ -241,22 +222,124 @@ namespace TileGame
             return state;
         }
 
-        public Tile(TileID ID, SimpleVector direction, bool state, bool stateHasBeenTrueThisUpdate)
+        public Tile Clone()
         {
-            this.ID = ID;
-            this.direction = direction;
-            this.state = state;
+            return new Tile(direction.Clone(), state);
+        }
+    }
+
+    public class EmptyTile : Tile
+    {
+        public readonly TileID ID = TileID.EmptyTile;
+        public bool stateHasBeenTrueThisUpdate;
+
+        public EmptyTile(SimpleVector direction, bool state) : base(direction, state)
+        {
             this.stateHasBeenTrueThisUpdate = false;
         }
 
-        public Tile Clone()
+        public override void TrySetHighState()
         {
-            return new Tile(ID, direction.Clone(), state, stateHasBeenTrueThisUpdate);
+            this.state = true && !stateHasBeenTrueThisUpdate;
+            this.stateHasBeenTrueThisUpdate = true;
+        }
+
+        public override void TrySetHighStateAndDirection(SimpleVector direction)
+        {
+            base.TrySetHighStateAndDirection(direction);
+            this.direction = direction;
+        }
+
+        public override void ResetState()
+        {
+            base.ResetState();
+            this.stateHasBeenTrueThisUpdate = false;
+        }
+    }
+    public class Splitter : Tile
+    {
+        public readonly TileID ID = TileID.Splitter;
+
+        public Splitter(SimpleVector direction, bool state) : base(direction, state) { }
+    }
+
+    public class Redirector : EmptyTile // We inherit from empty tile because most of the behavior is identical
+    {
+        public readonly TileID ID = TileID.Redirector;
+        
+        public Redirector(SimpleVector direction, bool state) : base(direction, state) { }
+
+        public override void TrySetHighStateAndDirection(SimpleVector direction)
+        {
+            base.TrySetHighStateAndDirection(direction);
+            // Don't set direction.
+        }
+    }
+
+    public class Wall : Tile
+    {
+        public readonly TileID ID = TileID.Wall;
+
+        public Wall(SimpleVector direction, bool state) : base(direction, state) { }
+
+        // The wall tile cannot have a high state.
+        public override void TrySetHighState()
+        {
+            
+        }
+
+        // The wall tile cannot have a high state or a direction.
+        public override void TrySetHighStateAndDirection(SimpleVector direction)
+        {
+
+        }
+
+        // The wall tile cannot have a high state, so resetting is not neccesary.
+        public override void ResetState()
+        {
+
+        }
+    }
+
+    public class Jumper : Tile
+    {
+        public readonly TileID ID = TileID.Jumper;
+        public bool stateHasBeenTrueThisUpdate;
+        public SimpleVector direction2;
+        protected bool state2;
+        public bool stateHasBeenTrueThisUpdate2;
+
+        public Jumper(SimpleVector direction, bool state, SimpleVector direction2, bool state2) : base(direction, state)
+        {
+            this.direction2 = direction2;
+            this.state2 = state2;
+        }
+
+        public override void TrySetHighState()
+        {
+            throw new InvalidOperationException("The Jumper tile can contain two signals, so TrySetHighState() cannot be used. Instead, use TrySetHighStateAndDirection().");
+        }
+
+        public override void TrySetHighStateAndDirection(SimpleVector direction)
+        {
+            //TODO
+            base.TrySetHighStateAndDirection(direction);
+            this.direction = direction;
+        }
+
+        public override void ResetState()
+        {
+
+            base.ResetState();
+            this.stateHasBeenTrueThisUpdate = false;
+            this.state2 = false;
+            this.stateHasBeenTrueThisUpdate2 = false;
         }
     }
 
     public enum TileID
     {   
+        InvalidTile,
         EmptyTile,
         Splitter,
         Redirector,
