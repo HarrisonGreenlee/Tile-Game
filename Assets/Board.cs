@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace TileGame
@@ -86,7 +85,7 @@ namespace TileGame
                                 {
                                     nextBoardState.board[i, j + 1].TrySetHighStateAndDirection(SimpleVector.Down());
                                 }
-                                if (nextBoardState.IsValidPosition(i-1, j))
+                                if (nextBoardState.IsValidPosition(i - 1, j))
                                 {
                                     nextBoardState.board[i - 1, j].TrySetHighStateAndDirection(SimpleVector.Left());
                                 }
@@ -135,7 +134,7 @@ namespace TileGame
                 for (int i = 0; i < xLength; i++)
                 {
                     Tile currentTile = board[i, j];
-                    boardClone.board[i,j] = currentTile.Clone();
+                    boardClone.board[i, j] = currentTile.Clone();
                 }
             }
             return boardClone;
@@ -143,7 +142,7 @@ namespace TileGame
 
         public bool IsValidPosition(int xPos, int yPos)
         {
-            if(xPos >= 0 && xPos < xLength && yPos >= 0 && yPos < yLength)
+            if (xPos >= 0 && xPos < xLength && yPos >= 0 && yPos < yLength)
             {
                 return true;
             }
@@ -190,89 +189,194 @@ namespace TileGame
         }
     }
 
-    public class Tile
+    public interface Tile
     {
-        public const TileID ID = TileID.InvalidTile;
-        public SimpleVector direction;
-        protected bool state;
-
-        public Tile(SimpleVector direction, bool state)
-        {
-            this.direction = direction;
-            this.state = state;
-        }
-
-        public virtual void ResetState()
-        {
-            this.state = false;
-        }
-
-        public virtual void TrySetHighState()
-        {
-            this.state = true;
-        }
-
-        public virtual void TrySetHighStateAndDirection(SimpleVector direction)
-        {
-            TrySetHighState();
-        }
-
-        public bool HasSignal()
-        {
-            return state;
-        }
-
-        public Tile Clone()
-        {
-            return new Tile(direction.Clone(), state);
-        }
+        public TileID GetTileID();
+        
+        //TODO
+        // public SimpleVector GetDirection();
+        public void TrySetHighState();
+        public void TrySetHighStateAndDirection(SimpleVector direction);
+        public void ResetState();
+        public bool HasSignal();
+        public Tile Clone();
     }
+
+    // This used to be the base tile class, but it was replaced by an interface.
+    //public class Tile
+    //{
+    //    public const TileID ID = TileID.InvalidTile;
+    //    public SimpleVector direction;
+    //    protected bool state;
+
+    //    public Tile(SimpleVector direction, bool state)
+    //    {
+    //        this.direction = direction;
+    //        this.state = state;
+    //    }
+
+    //    public virtual void ResetState()
+    //    {
+    //        this.state = false;
+    //    }
+
+    //    public virtual void TrySetHighState()
+    //    {
+    //        this.state = true;
+    //    }
+
+    //    public virtual void TrySetHighStateAndDirection(SimpleVector direction)
+    //    {
+    //        TrySetHighState();
+    //    }
+
+    //    public bool HasSignal()
+    //    {
+    //        return state;
+    //    }
+
+    //    public Tile Clone()
+    //    {
+    //        return new Tile(direction.Clone(), state);
+    //    }
+    //}
 
     public class EmptyTile : Tile
     {
         public readonly TileID ID = TileID.EmptyTile;
-        public bool stateHasBeenTrueThisUpdate;
 
-        public EmptyTile(SimpleVector direction, bool state) : base(direction, state)
+        private SimpleVector direction;
+        private bool state;
+        private bool collisionFlag;
+
+        public EmptyTile(SimpleVector direction, bool state, bool collisionFlag = false)
         {
-            this.stateHasBeenTrueThisUpdate = false;
+            this.direction = direction;
+            this.state = state;
+            this.collisionFlag = false;
         }
 
-        public override void TrySetHighState()
+        public TileID GetTileID()
         {
-            this.state = true && !stateHasBeenTrueThisUpdate;
-            this.stateHasBeenTrueThisUpdate = true;
+            return ID;
         }
 
-        public override void TrySetHighStateAndDirection(SimpleVector direction)
+        public void TrySetHighState()
         {
-            base.TrySetHighStateAndDirection(direction);
+            this.state = !collisionFlag;
+            this.collisionFlag = true;
+        }
+
+        public void TrySetHighStateAndDirection(SimpleVector direction)
+        {
+            this.TrySetHighState();
             this.direction = direction;
         }
 
-        public override void ResetState()
+        public void ResetState()
         {
-            base.ResetState();
-            this.stateHasBeenTrueThisUpdate = false;
+            this.state = false;
+            this.collisionFlag = false;
+        }
+
+        public bool HasSignal()
+        {
+            return this.state;
+        }
+
+        public Tile Clone()
+        {
+            return new EmptyTile(this.direction, this.state, this.collisionFlag); 
         }
     }
+
     public class Splitter : Tile
     {
         public readonly TileID ID = TileID.Splitter;
+        private bool state;
 
-        public Splitter(SimpleVector direction, bool state) : base(direction, state) { }
+        public Splitter(bool state)
+        {
+            this.state = state;
+        }
+        public TileID GetTileID()
+        {
+            return ID;
+        }
+
+        public void TrySetHighState()
+        {
+            this.state = true;
+        }
+
+        public void TrySetHighStateAndDirection(SimpleVector direction)
+        {
+            TrySetHighState();
+            // The splitter tile does not have a direction.
+        }
+
+        public void ResetState()
+        {
+            this.state = false;
+        }
+
+        public bool HasSignal()
+        {
+            return this.state;
+        }
+
+        public Tile Clone()
+        {
+            return new Splitter(this.state);
+        }
     }
 
-    public class Redirector : EmptyTile // We inherit from empty tile because most of the behavior is identical
+    public class Redirector : Tile
     {
         public readonly TileID ID = TileID.Redirector;
-        
-        public Redirector(SimpleVector direction, bool state) : base(direction, state) { }
 
-        public override void TrySetHighStateAndDirection(SimpleVector direction)
+        private SimpleVector direction;
+        private bool state;
+        private bool collisionFlag;
+
+        public Redirector(SimpleVector direction, bool state, bool collisionFlag = false)
         {
-            base.TrySetHighStateAndDirection(direction);
+            this.direction = direction;
+            this.state = state;
+            this.collisionFlag = false;
+        }
+
+        public TileID GetTileID()
+        {
+            return ID;
+        }
+
+        public void TrySetHighState()
+        {
+            this.state = !collisionFlag;
+            this.collisionFlag = true;
+        }
+
+        public void TrySetHighStateAndDirection(SimpleVector direction)
+        {
+            this.TrySetHighState();
             // Don't set direction.
+        }
+
+        public void ResetState()
+        {
+            this.state = false;
+            this.collisionFlag = false;
+        }
+
+        public bool HasSignal()
+        {
+            return this.state;
+        }
+
+        public Tile Clone()
+        {
+            return new Redirector(this.direction, this.state, this.collisionFlag);
         }
     }
 
@@ -280,65 +384,117 @@ namespace TileGame
     {
         public readonly TileID ID = TileID.Wall;
 
-        public Wall(SimpleVector direction, bool state) : base(direction, state) { }
-
-        // The wall tile cannot have a high state.
-        public override void TrySetHighState()
+        public TileID GetTileID()
         {
-            
+            return ID;
         }
 
-        // The wall tile cannot have a high state or a direction.
-        public override void TrySetHighStateAndDirection(SimpleVector direction)
+        public void TrySetHighState()
         {
-
+            // Wall tiles do not have a high state.
         }
 
-        // The wall tile cannot have a high state, so resetting is not neccesary.
-        public override void ResetState()
+        public void TrySetHighStateAndDirection(SimpleVector direction)
         {
+            // Wall tiles do not have a high state or a direction.
+        }
 
+        public void ResetState()
+        {
+            // There is no high state or direction to reset.
+        }
+
+        public bool HasSignal()
+        {
+            // Wall tiles cannot have a signal.
+            return false;
+        }
+
+        public Tile Clone()
+        {
+            return new Wall();
         }
     }
 
     public class Jumper : Tile
     {
         public readonly TileID ID = TileID.Jumper;
-        public bool stateHasBeenTrueThisUpdate;
-        public SimpleVector direction2;
-        protected bool state2;
-        public bool stateHasBeenTrueThisUpdate2;
 
-        public Jumper(SimpleVector direction, bool state, SimpleVector direction2, bool state2) : base(direction, state)
+        // There can be two vectors in a Jumper tile, but only if they are perpendicular. 
+        // Therefore we can represent the data within the tile as two vectors - one vertical and one horizontal.
+        private SimpleVector xDirection;
+        private bool xState;
+
+        private SimpleVector yDirection;
+        private bool yState;
+
+        public Jumper(SimpleVector xDirection, bool xState, SimpleVector yDirection, bool yState)
         {
-            this.direction2 = direction2;
-            this.state2 = state2;
+            if(this.xDirection.yComponent != 0)
+            {
+                throw new ArgumentException("The horizontal data in the jumper tile cannot contain a vector with a non-zero vertical direction component.");
+            }
+
+            if (this.yDirection.xComponent != 0)
+            {
+                throw new ArgumentException("The vertical data in the jumper tile cannot contain a vector with a non-zero horizontal direction component.");
+            }
+
+            this.xDirection = xDirection;
+            this.xState = xState;
+            this.yDirection = yDirection;
+            this.yState = yState;
         }
 
-        public override void TrySetHighState()
+        public TileID GetTileID()
+        {
+            return ID;
+        }
+
+        public void TrySetHighState()
         {
             throw new InvalidOperationException("The Jumper tile can contain two signals, so TrySetHighState() cannot be used. Instead, use TrySetHighStateAndDirection().");
         }
 
-        public override void TrySetHighStateAndDirection(SimpleVector direction)
+        public void TrySetHighStateAndDirection(SimpleVector direction)
         {
-            //TODO
-            base.TrySetHighStateAndDirection(direction);
-            this.direction = direction;
+            bool hasXComponent = direction.xComponent != 0;
+            bool hasYComponent = direction.yComponent != 0;
+            if ((hasXComponent && hasYComponent) || (direction.xComponent == 0 && direction.yComponent == 0))
+            {
+                throw new ArgumentException("Jumper tiles can only store non-zero horizontal and vertical vectors.");
+            }
+            else if (hasXComponent)
+            {
+                this.xState = !this.xState; // handles horizontal collisions
+                this.xDirection = direction; // This will set direction even if there is a collision, which isn't an issue.
+            }
+            else // hasYComponent
+            {
+                this.yState = !this.yState; // handles horizontal collisions
+                this.yDirection = direction; // This will set direction even if there is a collision, which isn't an issue.
+            }
         }
 
-        public override void ResetState()
+        public void ResetState()
         {
-
-            base.ResetState();
-            this.stateHasBeenTrueThisUpdate = false;
-            this.state2 = false;
-            this.stateHasBeenTrueThisUpdate2 = false;
+            xState = false;
+            yState = false;
         }
+
+        public bool HasSignal()
+        {
+            return this.xState || this.yState;
+        }
+
+        public Tile Clone()
+        {
+            return new Jumper(this.xDirection, this.xState, this.yDirection, this.yState);
+        }   
     }
 
     public enum TileID
-    {   
+    {
         InvalidTile,
         EmptyTile,
         Splitter,
