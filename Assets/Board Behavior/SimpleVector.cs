@@ -5,7 +5,7 @@ namespace TileGame
     /// <summary>
     /// An extremely simplified 2D vector class. Can only rotate left and right by 90 degree increments.
     /// </summary>
-    public class SimpleVector
+    public class SimpleVector : IEquatable<SimpleVector>
     {
         public int xComponent;
         public int yComponent;
@@ -103,6 +103,27 @@ namespace TileGame
         public SimpleVector Clone()
         {
             return new SimpleVector(xComponent, yComponent);
+        }
+
+
+        public bool Equals(SimpleVector other)
+        {
+            return this.GetComponents().Equals(other.GetComponents());
+        }
+
+        public override bool Equals(Object obj)
+        {
+            return this.Equals(obj as SimpleVector);
+        }
+
+        public static bool operator ==(SimpleVector v1, SimpleVector v2)
+        {
+            return v1.Equals(v2);
+        }
+
+        public static bool operator !=(SimpleVector v1, SimpleVector v2)
+        {
+            return !(v1 == v2);
         }
     }
 }

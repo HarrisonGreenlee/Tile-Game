@@ -46,6 +46,8 @@ namespace TileGame
         }
 
         public abstract Tile Clone();
+
+        public abstract Char DebugDisplay();
     }
 
     public class EmptyTile : Tile
@@ -82,6 +84,16 @@ namespace TileGame
         {
             return new EmptyTile(this.direction, this.state, this.collisionFlag);
         }
+
+        public override char DebugDisplay()
+        {
+            if (state)
+            {
+                return '▓';
+            }
+
+            return '░'; 
+        }
     }
 
     public class Splitter : Tile
@@ -102,6 +114,16 @@ namespace TileGame
         public override Tile Clone()
         {
             return new Splitter(this.state);
+        }
+
+        public override char DebugDisplay()
+        {
+            if (state)
+            {
+                return 'S';
+            }
+
+            return 's';
         }
     }
 
@@ -140,6 +162,49 @@ namespace TileGame
         {
             return new Redirector(this.direction, this.state, this.collisionFlag);
         }
+
+        public override char DebugDisplay()
+        {
+            if (state)
+            {
+                if(direction == SimpleVector.Left())
+                {
+                    return '\u25C0';
+                }
+                else if (direction == SimpleVector.Right())
+                {
+                    return '\u25B6';
+                }
+                else if (direction == SimpleVector.Up())
+                {
+                    return '\u25B2';
+                }
+                else if (direction == SimpleVector.Down())
+                {
+                    return '\u25BC';
+                }
+            }
+            else
+            {
+                if (direction == SimpleVector.Left())
+                {
+                    return '\u25C2';
+                }
+                else if (direction == SimpleVector.Right())
+                {
+                    return '\u25B8';
+                }
+                else if (direction == SimpleVector.Up())
+                {
+                    return '\u25B4';
+                }
+                else if (direction == SimpleVector.Down())
+                {
+                    return '\u25BE';
+                }
+            }
+            return '?';
+        }
     }
 
     public class Wall : Tile
@@ -174,6 +239,11 @@ namespace TileGame
         public override Tile Clone()
         {
             return new Wall();
+        }
+
+        public override char DebugDisplay()
+        {
+            return 'W';
         }
     }
 
@@ -264,6 +334,11 @@ namespace TileGame
         public override Tile Clone()
         {
             return new Jumper(this.xDirection, this.xState, this.yDirection, this.yState);
+        }
+
+        public override char DebugDisplay()
+        {
+            return '#';
         }
     }
 

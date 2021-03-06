@@ -210,5 +210,20 @@ namespace TileGame
             }
             return builtString;
         }
+        public String DebugDisplay()
+        {
+            // This is just for testing
+            // if actually used then the function needs to be changed to use stringbuilder
+            String builtString = "";
+            for (int j = 0; j < yLength; j++)
+            {
+                for (int i = 0; i < xLength; i++)
+                {
+                    builtString = builtString + board[i, j].DebugDisplay();
+                }
+                builtString = builtString + "\n";
+            }
+            return builtString;
+        }
     }
 }

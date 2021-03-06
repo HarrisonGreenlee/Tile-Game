@@ -3,7 +3,54 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
+namespace TileGame
+{
+    public class Main : MonoBehaviour, IPointerClickHandler
+    {
+        Text displayText;
+        Board testBoard = new Board(8, 8);
+
+        void Start()
+        {
+            displayText = GetComponent<Text>();
+            testBoard.board[3, 2] = new EmptyTile(SimpleVector.Down(), true);
+            //testBoard.board[3, 3] = new Jumper(false, false);
+            testBoard.board[2, 3] = new EmptyTile(SimpleVector.Right(), true);
+            displayText.text = testBoard.DebugDisplay();
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            testBoard.Update();
+            displayText.text = testBoard.DebugDisplay();
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 namespace TileGame
 {
     public class Main : MonoBehaviour
@@ -49,3 +96,4 @@ namespace TileGame
         }
     }
 }
+*/
